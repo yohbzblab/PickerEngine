@@ -167,10 +167,39 @@
         gap: 10px;
       }
 
+      .chip {
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(123, 223, 242, 0.12);
+        border: 1px solid rgba(123, 223, 242, 0.4);
+        font-size: 0.92rem;
+      }
+
+      .chip.alt {
+        background: rgba(242, 184, 128, 0.12);
+        border-color: rgba(242, 184, 128, 0.4);
+      }
+
+      .section {
+        margin-top: 18px;
+      }
+
+      .section-title {
+        margin: 0 0 12px;
+        font-size: 1.35rem;
+      }
+
+      .result-card.compact {
+        min-height: 0;
+      }
 
       .status {
         margin-top: 14px;
         color: var(--muted);
+      }
+
+      .status.error {
+        color: var(--danger);
       }
 
       .raw {
@@ -214,85 +243,161 @@
   <body>
     <div class="frame">
       <section class="panel">
-        <h1>Keyword Debug Console</h1>
+        <h1>Instagram API Debug Console</h1>
         <p>
-          Test prompt versions and see keyword/category output. Images are included automatically.
+          Lightweight API test harness for keyword extraction and DM generation.
         </p>
         <label for="userId">Instagram Username</label>
         <input id="userId" type="text" placeholder="e.g. minD3D" />
 
-        <label for="version">Prompt Version</label>
-        <select id="version"></select>
-
-        <label for="customVersion">Custom Version</label>
-        <input id="customVersion" type="text" placeholder="e.g. v3" />
-
-        <button id="runBtn">Run Extraction</button>
+        <button id="runBtn">Run Keyword Extraction</button>
+        <div class="status meta" id="keywordStatus"></div>
         <button id="dmBtn">Generate DM</button>
-        <div class="status meta" id="status"></div>
+        <div class="status meta" id="dmStatus"></div>
       </section>
 
       <section class="panel">
-        <div class="result-card">
-          <div class="card-header">
-            <h2>Keywords</h2>
-            <button class="copy-btn" data-copy="keywords">Copy</button>
+        <div class="section">
+          <h2 class="section-title">Keyword Extraction</h2>
+          <div class="result-card compact">
+            <div class="card-header">
+              <h2>Request</h2>
+            </div>
+            <label for="keywordVersion">Prompt Version</label>
+            <select id="keywordVersion"></select>
+            <label for="customKeywordVersion">Custom Version</label>
+            <input id="customKeywordVersion" type="text" placeholder="e.g. v3" />
+            <label class="meta">
+              <input id="keywordIgnoreCache" type="checkbox" />
+              Ignore Cache
+            </label>
+            <textarea id="keywordRequestOutput" rows="6" readonly></textarea>
           </div>
-          <div class="chips" id="keywordChips"></div>
-        </div>
-        <div class="result-card" style="margin-top: 18px;">
-          <div class="card-header">
-            <h2>Category</h2>
-            <button class="copy-btn" data-copy="category">Copy</button>
+          <div class="result-card">
+            <div class="card-header">
+              <h2>Keywords</h2>
+              <button class="copy-btn" data-copy="keywords">Copy</button>
+            </div>
+            <div class="chips" id="keywordChips"></div>
           </div>
-          <div class="chips" id="categoryChips"></div>
-        </div>
-        <div class="result-card" style="margin-top: 18px;">
-          <div class="card-header">
-            <h2>Prompt Template</h2>
-            <button class="copy-btn" data-copy="template">Copy</button>
+          <div class="result-card" style="margin-top: 18px;">
+            <div class="card-header">
+              <h2>Category</h2>
+              <button class="copy-btn" data-copy="category">Copy</button>
+            </div>
+            <div class="chips" id="categoryChips"></div>
           </div>
-          <textarea id="templateOutput" rows="8" readonly></textarea>
-        </div>
-        <div class="result-card" style="margin-top: 18px;">
-          <div class="card-header">
-            <h2>Prompt Preview</h2>
-            <button class="copy-btn" data-copy="prompt">Copy</button>
+          <div class="result-card" style="margin-top: 18px;">
+            <div class="card-header">
+              <h2>Prompt Template</h2>
+              <button class="copy-btn" data-copy="template">Copy</button>
+            </div>
+            <textarea id="templateOutput" rows="8" readonly></textarea>
           </div>
-          <textarea id="promptOutput" rows="8" readonly></textarea>
-        </div>
-        <div class="result-card" style="margin-top: 18px;">
-          <div class="card-header">
-            <h2>DM Message</h2>
-            <button class="copy-btn" data-copy="dm">Copy</button>
+          <div class="result-card" style="margin-top: 18px;">
+            <div class="card-header">
+              <h2>Prompt Preview</h2>
+              <button class="copy-btn" data-copy="prompt">Copy</button>
+            </div>
+            <textarea id="promptOutput" rows="8" readonly></textarea>
           </div>
-          <textarea id="dmOutput" rows="8" readonly></textarea>
+          <div class="card-header" style="margin-top: 18px;">
+            <h2 style="margin: 0;">Response</h2>
+            <button class="copy-btn" data-copy="keyword-raw">Copy</button>
+          </div>
+          <div class="raw" id="keywordRawOutput">Waiting for response...</div>
         </div>
-        <div class="card-header" style="margin-top: 18px;">
-          <h2 style="margin: 0;">Raw Response</h2>
-          <button class="copy-btn" data-copy="raw">Copy</button>
+
+        <div class="section">
+          <h2 class="section-title">DM Generation</h2>
+          <div class="result-card compact">
+            <div class="card-header">
+              <h2>Request</h2>
+            </div>
+            <label for="dmKeywordVersion">Keyword Version</label>
+            <select id="dmKeywordVersion"></select>
+            <label for="customDmKeywordVersion">Custom Keyword Version</label>
+            <input id="customDmKeywordVersion" type="text" placeholder="e.g. v3" />
+            <label for="dmVersion">DM Prompt Version</label>
+            <select id="dmVersion"></select>
+            <label for="customDmVersion">Custom DM Version</label>
+            <input id="customDmVersion" type="text" placeholder="e.g. v2" />
+            <label class="meta">
+              <input id="dmIgnoreCache" type="checkbox" />
+              Ignore Cache
+            </label>
+            <textarea id="dmRequestOutput" rows="7" readonly></textarea>
+          </div>
+          <div class="result-card">
+            <div class="card-header">
+              <h2>DM Message</h2>
+              <button class="copy-btn" data-copy="dm">Copy</button>
+            </div>
+            <textarea id="dmOutput" rows="8" readonly></textarea>
+          </div>
+          <div class="result-card compact" style="margin-top: 18px;">
+            <div class="card-header">
+              <h2>Mood Keywords</h2>
+            </div>
+            <div class="chips" id="dmMoodChips"></div>
+          </div>
+          <div class="result-card compact" style="margin-top: 18px;">
+            <div class="card-header">
+              <h2>Content Keywords</h2>
+            </div>
+            <div class="chips" id="dmContentChips"></div>
+          </div>
+          <div class="result-card compact" style="margin-top: 18px;">
+            <div class="card-header">
+              <h2>Tone Keywords</h2>
+            </div>
+            <div class="chips" id="dmToneChips"></div>
+          </div>
+          <div class="result-card" style="margin-top: 18px;">
+            <div class="card-header">
+              <h2>Impression Summary</h2>
+              <button class="copy-btn" data-copy="dm-summary">Copy</button>
+            </div>
+            <textarea id="dmSummaryOutput" rows="5" readonly></textarea>
+          </div>
+          <div class="card-header" style="margin-top: 18px;">
+            <h2 style="margin: 0;">Response</h2>
+            <button class="copy-btn" data-copy="dm-raw">Copy</button>
+          </div>
+          <div class="raw" id="dmRawOutput">Waiting for response...</div>
         </div>
-        <div class="raw" id="rawOutput">Waiting for response...</div>
       </section>
     </div>
 
     <script>
       const runBtn = document.getElementById("runBtn");
       const dmBtn = document.getElementById("dmBtn");
-      const statusEl = document.getElementById("status");
+      const keywordStatusEl = document.getElementById("keywordStatus");
+      const dmStatusEl = document.getElementById("dmStatus");
       const keywordChips = document.getElementById("keywordChips");
       const categoryChips = document.getElementById("categoryChips");
       const templateOutput = document.getElementById("templateOutput");
       const promptOutput = document.getElementById("promptOutput");
       const dmOutput = document.getElementById("dmOutput");
-      const rawOutput = document.getElementById("rawOutput");
-      const versionSelect = document.getElementById("version");
+      const keywordRawOutput = document.getElementById("keywordRawOutput");
+      const dmRawOutput = document.getElementById("dmRawOutput");
+      const dmMoodChips = document.getElementById("dmMoodChips");
+      const dmContentChips = document.getElementById("dmContentChips");
+      const dmToneChips = document.getElementById("dmToneChips");
+      const dmSummaryOutput = document.getElementById("dmSummaryOutput");
+      const keywordVersionSelect = document.getElementById("keywordVersion");
+      const dmKeywordVersionSelect = document.getElementById("dmKeywordVersion");
+      const dmVersionSelect = document.getElementById("dmVersion");
+      const keywordRequestOutput = document.getElementById("keywordRequestOutput");
+      const dmRequestOutput = document.getElementById("dmRequestOutput");
+      const keywordIgnoreCache = document.getElementById("keywordIgnoreCache");
+      const dmIgnoreCache = document.getElementById("dmIgnoreCache");
       const copyButtons = document.querySelectorAll("[data-copy]");
 
-      function buildVersion() {
-        const version = versionSelect.value;
+      function buildVersion(selectEl, customInputId) {
+        const version = selectEl.value;
         if (version === "custom") {
-          return document.getElementById("customVersion").value.trim();
+          return document.getElementById(customInputId).value.trim();
         }
         return version;
       }
@@ -311,22 +416,30 @@
         });
       }
 
+      function setStatus(target, message, isError) {
+        target.textContent = message;
+        target.className = isError ? "status error" : "status";
+      }
+
+      function setRequestPreview(target, payload) {
+        target.value = JSON.stringify(payload, null, 2);
+      }
+
       async function runExtraction() {
         const userId = document.getElementById("userId").value.trim();
-        const version = buildVersion();
+        const version = buildVersion(keywordVersionSelect, "customKeywordVersion");
+        const ignoreCache = keywordIgnoreCache.checked;
         if (!userId) {
-          statusEl.textContent = "Please enter a username.";
-          statusEl.className = "status error";
+          setStatus(keywordStatusEl, "Please enter a username.", true);
           return;
         }
-        statusEl.textContent = "Requesting keywords...";
-        statusEl.className = "status";
+        setStatus(keywordStatusEl, "Requesting keywords...", false);
         keywordChips.innerHTML = "";
         categoryChips.innerHTML = "";
-        rawOutput.textContent = "Loading...";
+        keywordRawOutput.textContent = "Loading...";
         templateOutput.value = "Loading...";
         promptOutput.value = "Loading...";
-        dmOutput.value = "";
+        setRequestPreview(keywordRequestOutput, { userId, version, ignoreCache });
 
         try {
           const promptResponse = await fetch("/instagram/keyword-prompt", {
@@ -346,54 +459,57 @@
           const response = await fetch("/instagram/extract-keywords", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, version }),
+            body: JSON.stringify({ userId, version, ignoreCache }),
           });
           const text = await response.text();
-          rawOutput.textContent = text || "(empty response)";
+          keywordRawOutput.textContent = text || "(empty response)";
           if (!response.ok) {
-            statusEl.textContent = "Request failed: " + response.status;
-            statusEl.className = "status error";
+            setStatus(keywordStatusEl, "Request failed: " + response.status, true);
             return;
           }
           let payload = null;
           try {
             payload = JSON.parse(text);
           } catch (err) {
-            statusEl.textContent = "Failed to parse JSON response.";
-            statusEl.className = "status error";
+            setStatus(keywordStatusEl, "Failed to parse JSON response.", true);
             return;
           }
           renderChips(keywordChips, payload.keywords, "");
           renderChips(categoryChips, payload.category, "alt");
-          statusEl.textContent = "Done.";
+          setStatus(keywordStatusEl, "Done.", false);
         } catch (err) {
-          statusEl.textContent = "Network error: " + err.message;
-          statusEl.className = "status error";
+          setStatus(keywordStatusEl, "Network error: " + err.message, true);
         }
       }
 
       async function runDmGeneration() {
         const userId = document.getElementById("userId").value.trim();
-        const version = buildVersion();
+        const version = buildVersion(dmKeywordVersionSelect, "customDmKeywordVersion");
+        const dmVersion = buildVersion(dmVersionSelect, "customDmVersion");
+        const ignoreCache = dmIgnoreCache.checked;
         if (!userId) {
-          statusEl.textContent = "Please enter a username.";
-          statusEl.className = "status error";
+          setStatus(dmStatusEl, "Please enter a username.", true);
           return;
         }
-        statusEl.textContent = "Generating DM...";
-        statusEl.className = "status";
+        setStatus(dmStatusEl, "Generating DM...", false);
         dmOutput.value = "Loading...";
+        dmRawOutput.textContent = "Loading...";
+        dmSummaryOutput.value = "";
+        dmMoodChips.innerHTML = "";
+        dmContentChips.innerHTML = "";
+        dmToneChips.innerHTML = "";
+        setRequestPreview(dmRequestOutput, { userId, version, dmVersion, ignoreCache });
 
         try {
           const response = await fetch("/instagram/generate-dm", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, version, ignoreCache: false }),
+            body: JSON.stringify({ userId, version, dmVersion, ignoreCache }),
           });
           const text = await response.text();
+          dmRawOutput.textContent = text || "(empty response)";
           if (!response.ok) {
-            statusEl.textContent = "Request failed: " + response.status;
-            statusEl.className = "status error";
+            setStatus(dmStatusEl, "Request failed: " + response.status, true);
             dmOutput.value = "(failed to generate)";
             return;
           }
@@ -401,16 +517,18 @@
           try {
             payload = JSON.parse(text);
           } catch (err) {
-            statusEl.textContent = "Failed to parse JSON response.";
-            statusEl.className = "status error";
+            setStatus(dmStatusEl, "Failed to parse JSON response.", true);
             dmOutput.value = "(invalid response)";
             return;
           }
           dmOutput.value = payload.message || "(empty message)";
-          statusEl.textContent = "Done.";
+          renderChips(dmMoodChips, payload.moodKeywords, "");
+          renderChips(dmContentChips, payload.contentKeywords, "");
+          renderChips(dmToneChips, payload.toneKeywords, "alt");
+          dmSummaryOutput.value = payload.impressionSummary || "(empty summary)";
+          setStatus(dmStatusEl, "Done.", false);
         } catch (err) {
-          statusEl.textContent = "Network error: " + err.message;
-          statusEl.className = "status error";
+          setStatus(dmStatusEl, "Network error: " + err.message, true);
           dmOutput.value = "(network error)";
         }
       }
@@ -419,19 +537,41 @@
         try {
           const response = await fetch("/instagram/keyword-versions");
           const versions = response.ok ? await response.json() : [];
-          versionSelect.innerHTML = "";
+          keywordVersionSelect.innerHTML = "";
+          dmKeywordVersionSelect.innerHTML = "";
           versions.forEach((version, index) => {
             const option = document.createElement("option");
             option.value = version;
             option.textContent = version + (index === 0 ? " (default)" : "");
-            versionSelect.appendChild(option);
+            keywordVersionSelect.appendChild(option);
+            dmKeywordVersionSelect.appendChild(option.cloneNode(true));
           });
           const custom = document.createElement("option");
           custom.value = "custom";
           custom.textContent = "custom";
-          versionSelect.appendChild(custom);
+          keywordVersionSelect.appendChild(custom);
+          dmKeywordVersionSelect.appendChild(custom.cloneNode(true));
         } catch (err) {
-          versionSelect.innerHTML = "<option value=\"v2\">v2 (default)</option>";
+          keywordVersionSelect.innerHTML = "<option value=\"v2\">v2 (default)</option>";
+          dmKeywordVersionSelect.innerHTML = "<option value=\"v2\">v2 (default)</option>";
+        }
+
+        try {
+          const dmResponse = await fetch("/instagram/dm-versions");
+          const dmVersions = dmResponse.ok ? await dmResponse.json() : [];
+          dmVersionSelect.innerHTML = "";
+          dmVersions.forEach((version, index) => {
+            const option = document.createElement("option");
+            option.value = version;
+            option.textContent = version + (index === 0 ? " (default)" : "");
+            dmVersionSelect.appendChild(option);
+          });
+          const custom = document.createElement("option");
+          custom.value = "custom";
+          custom.textContent = "custom";
+          dmVersionSelect.appendChild(custom);
+        } catch (err) {
+          dmVersionSelect.innerHTML = "<option value=\"v1\">v1 (default)</option>";
         }
       }
 
@@ -462,6 +602,7 @@
         button.addEventListener("click", async () => {
           const target = button.dataset.copy;
           let text = "";
+          const statusTarget = target.startsWith("dm") ? dmStatusEl : keywordStatusEl;
           if (target === "keywords") {
             text = Array.from(keywordChips.querySelectorAll(".chip")).map((chip) => chip.textContent).join(", ");
           } else if (target === "category") {
@@ -472,21 +613,22 @@
             text = promptOutput.value;
           } else if (target === "dm") {
             text = dmOutput.value;
-          } else if (target === "raw") {
-            text = rawOutput.textContent;
+          } else if (target === "dm-summary") {
+            text = dmSummaryOutput.value;
+          } else if (target === "keyword-raw") {
+            text = keywordRawOutput.textContent;
+          } else if (target === "dm-raw") {
+            text = dmRawOutput.textContent;
           }
           if (!text) {
-            statusEl.textContent = "Nothing to copy.";
-            statusEl.className = "status error";
+            setStatus(statusTarget, "Nothing to copy.", true);
             return;
           }
           try {
             await copyTextToClipboard(text);
-            statusEl.textContent = "Copied to clipboard.";
-            statusEl.className = "status";
+            setStatus(statusTarget, "Copied to clipboard.", false);
           } catch (err) {
-            statusEl.textContent = "Copy failed: " + err.message;
-            statusEl.className = "status error";
+            setStatus(statusTarget, "Copy failed: " + err.message, true);
           }
         });
       });

@@ -42,3 +42,4 @@ scripts/deploy_ec2.sh
 # SSH keys
 *.pem
 .env.local
+src/main/resources/application-secrets.properties

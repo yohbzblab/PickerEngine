@@ -6,6 +6,7 @@ import org.engine.pickerengine.dto.InstagramKeywordResponse;
 import org.engine.pickerengine.dto.InstagramProfile;
 import org.engine.pickerengine.dto.InstagramProfileWithPosts;
 import org.engine.pickerengine.dto.InstagramRequest;
+import org.engine.pickerengine.service.InstagramDmPromptService;
 import org.engine.pickerengine.service.InstagramDmService;
 import org.engine.pickerengine.service.InstagramKeywordService;
 import org.engine.pickerengine.service.InstagramService;
@@ -29,16 +30,19 @@ public class InstagramController {
     private final InstagramKeywordService instagramKeywordService;
     private final InstagramPromptService instagramPromptService;
     private final InstagramDmService instagramDmService;
+    private final InstagramDmPromptService instagramDmPromptService;
 
     public InstagramController(
             InstagramService instagramService,
             InstagramKeywordService instagramKeywordService,
             InstagramPromptService instagramPromptService,
-            InstagramDmService instagramDmService) {
+            InstagramDmService instagramDmService,
+            InstagramDmPromptService instagramDmPromptService) {
         this.instagramService = instagramService;
         this.instagramKeywordService = instagramKeywordService;
         this.instagramPromptService = instagramPromptService;
         this.instagramDmService = instagramDmService;
+        this.instagramDmPromptService = instagramDmPromptService;
     }
 
     @PostMapping("/profiles")
@@ -69,6 +73,7 @@ public class InstagramController {
         return instagramDmService.generateDm(
                 request.userId(),
                 request.version(),
+                request.dmVersionOrDefault(),
                 request.ignoreCacheOrDefault());
     }
 
@@ -80,5 +85,10 @@ public class InstagramController {
     @GetMapping("/keyword-versions")
     public List<String> getKeywordVersions() {
         return instagramPromptService.listVersions();
+    }
+
+    @GetMapping("/dm-versions")
+    public List<String> getDmVersions() {
+        return instagramDmPromptService.listVersions();
     }
 }

@@ -58,14 +58,18 @@ public class InstagramDmService {
                 .build();
     }
 
-    public InstagramDmResponse generateDm(String userId, String version, boolean ignoreCache) {
+    public InstagramDmResponse generateDm(
+            String userId,
+            String keywordVersion,
+            String dmVersion,
+            boolean ignoreCache) {
         if (userId == null || userId.isBlank() || apiKey.isBlank()) {
             return new InstagramDmResponse("", List.of(), List.of(), List.of(), "");
         }
-        InstagramKeywordResponse keywords = keywordService.extractKeywords(userId, version, ignoreCache);
+        InstagramKeywordResponse keywords = keywordService.extractKeywords(userId, keywordVersion, ignoreCache);
         InstagramProfileWithPosts profileWithPosts = instagramService.fetchProfileWithPosts(userId);
         DmPromptContext context = buildPromptContext(profileWithPosts.profile(), keywords);
-        String prompt = buildPrompt(context);
+        String prompt = buildPrompt(context, resolvePromptVersion(dmVersion));
         String message = callModel(prompt);
         return new InstagramDmResponse(
                 message,
@@ -94,8 +98,8 @@ public class InstagramDmService {
         return new DmPromptContext(mood, content, tone, summary);
     }
 
-    private String buildPrompt(DmPromptContext context) {
-        String template = dmPromptService.loadTemplateRaw(defaultPromptVersion);
+    private String buildPrompt(DmPromptContext context, String version) {
+        String template = dmPromptService.loadTemplateRaw(version);
         return template
                 .replace("{{MOOD_KEYWORDS}}", joinKeywords(context.moodKeywords()))
                 .replace("{{CONTENT_KEYWORDS}}", joinKeywords(context.contentKeywords()))
@@ -215,6 +219,13 @@ public class InstagramDmService {
             }
         }
         return builder.toString();
+    }
+
+    private String resolvePromptVersion(String version) {
+        if (version == null || version.isBlank()) {
+            return defaultPromptVersion;
+        }
+        return version.trim();
     }
 
     private record DmPromptContext(
