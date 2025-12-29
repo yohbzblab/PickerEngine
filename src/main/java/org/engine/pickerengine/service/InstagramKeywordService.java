@@ -66,13 +66,18 @@ public class InstagramKeywordService {
                 .build();
     }
 
-    public InstagramKeywordResponse extractKeywords(String userId, String version, boolean ignoreCache) {
+    public InstagramKeywordResponse extractKeywords(
+            String userId,
+            String version,
+            String customPrompt,
+            boolean ignoreCache) {
         if (userId == null || userId.isBlank() || apiKey.isBlank()) {
             return emptyResponse();
         }
         String normalized = normalizeUsername(userId);
         String resolvedVersion = resolvePromptVersion(version);
-        if (!ignoreCache) {
+        boolean hasCustomPrompt = customPrompt != null && !customPrompt.isBlank();
+        if (!ignoreCache && !hasCustomPrompt) {
             LocalDateTime threshold = LocalDateTime.now().minusDays(KEYWORD_CACHE_DAYS);
             InstagramKeywordResponse cached = keywordCacheService
                     .findFreshCached(normalized, resolvedVersion, threshold)
@@ -85,27 +90,30 @@ public class InstagramKeywordService {
         if (data == null || data.profile() == null) {
             return emptyResponse();
         }
-        InstagramKeywordResponse response = callModel(data, resolvedVersion);
-        keywordCacheService.save(normalized, resolvedVersion, response);
+        InstagramKeywordResponse response = callModel(data, resolvedVersion, customPrompt);
+        if (!hasCustomPrompt) {
+            keywordCacheService.save(normalized, resolvedVersion, response);
+        }
         return response;
     }
 
-    public InstagramKeywordPromptResponse buildPromptPreview(String userId, String version) {
+    public InstagramKeywordPromptResponse buildPromptPreview(String userId, String version, String customPrompt) {
         String resolved = resolvePromptVersion(version);
+        String template = resolveTemplate(resolved, customPrompt);
         if (userId == null || userId.isBlank()) {
-            return new InstagramKeywordPromptResponse(resolved, "", promptService.loadTemplateRaw(resolved));
+            return new InstagramKeywordPromptResponse(resolved, "", template);
         }
         InstagramProfileWithPosts data = instagramService.fetchProfileWithPosts(userId);
         if (data == null || data.profile() == null) {
-            return new InstagramKeywordPromptResponse(resolved, "", promptService.loadTemplateRaw(resolved));
+            return new InstagramKeywordPromptResponse(resolved, "", template);
         }
-        String prompt = promptService.buildPrompt(data, postLimit, resolved);
-        return new InstagramKeywordPromptResponse(resolved, prompt, promptService.loadTemplateRaw(resolved));
+        String prompt = promptService.buildPromptFromTemplate(data, postLimit, template);
+        return new InstagramKeywordPromptResponse(resolved, prompt, template);
     }
 
-    private InstagramKeywordResponse callModel(InstagramProfileWithPosts data, String version) {
+    private InstagramKeywordResponse callModel(InstagramProfileWithPosts data, String version, String customPrompt) {
         try {
-            ObjectNode payload = buildPayload(data, version);
+            ObjectNode payload = buildPayload(data, version, customPrompt);
             HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.openai.com/v1/responses"))
                     .timeout(timeout)
                     .header("Authorization", "Bearer " + apiKey)
@@ -124,7 +132,7 @@ public class InstagramKeywordService {
         }
     }
 
-    private ObjectNode buildPayload(InstagramProfileWithPosts data, String version) {
+    private ObjectNode buildPayload(InstagramProfileWithPosts data, String version, String customPrompt) {
         ObjectNode payload = OBJECT_MAPPER.createObjectNode();
         payload.put("model", model);
 
@@ -135,7 +143,10 @@ public class InstagramKeywordService {
 
         content.addObject()
                 .put("type", "input_text")
-                .put("text", promptService.buildPrompt(data, postLimit, version));
+                .put("text", promptService.buildPromptFromTemplate(
+                        data,
+                        postLimit,
+                        resolveTemplate(version, customPrompt)));
 
         for (String imageUrl : collectImageUrls(data)) {
             content.addObject()
@@ -263,6 +274,13 @@ public class InstagramKeywordService {
             return defaultPromptVersion;
         }
         return version.trim();
+    }
+
+    private String resolveTemplate(String version, String customPrompt) {
+        if (customPrompt != null && !customPrompt.isBlank()) {
+            return customPrompt;
+        }
+        return promptService.loadTemplateRaw(version);
     }
 
     private static String normalizeUsername(String userId) {

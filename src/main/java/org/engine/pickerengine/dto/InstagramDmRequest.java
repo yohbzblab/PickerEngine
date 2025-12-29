@@ -1,6 +1,12 @@
 package org.engine.pickerengine.dto;
 
-public record InstagramDmRequest(String userId, String version, String dmVersion, Boolean ignoreCache) {
+public record InstagramDmRequest(
+        String userId,
+        String version,
+        String customKeywordPrompt,
+        String dmVersion,
+        String customDmPrompt,
+        Boolean ignoreCache) {
     public boolean ignoreCacheOrDefault() {
         return ignoreCache != null && ignoreCache;
     }

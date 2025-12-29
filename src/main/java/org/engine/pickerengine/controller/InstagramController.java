@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.engine.pickerengine.dto.InstagramDmPromptRequest;
+import org.engine.pickerengine.dto.InstagramDmPromptResponse;
 import org.engine.pickerengine.dto.InstagramDmRequest;
 import org.engine.pickerengine.dto.InstagramDmResponse;
 
@@ -65,6 +67,7 @@ public class InstagramController {
         return instagramKeywordService.extractKeywords(
                 request.userId(),
                 request.version(),
+                request.customPrompt(),
                 request.ignoreCacheOrDefault());
     }
 
@@ -73,13 +76,18 @@ public class InstagramController {
         return instagramDmService.generateDm(
                 request.userId(),
                 request.version(),
+                request.customKeywordPrompt(),
                 request.dmVersionOrDefault(),
+                request.customDmPrompt(),
                 request.ignoreCacheOrDefault());
     }
 
     @PostMapping("/keyword-prompt")
     public InstagramKeywordPromptResponse getKeywordPrompt(@RequestBody InstagramKeywordRequest request) {
-        return instagramKeywordService.buildPromptPreview(request.userId(), request.version());
+        return instagramKeywordService.buildPromptPreview(
+                request.userId(),
+                request.version(),
+                request.customPrompt());
     }
 
     @GetMapping("/keyword-versions")
@@ -90,5 +98,23 @@ public class InstagramController {
     @GetMapping("/dm-versions")
     public List<String> getDmVersions() {
         return instagramDmPromptService.listVersions();
+    }
+
+    @PostMapping("/dm-prompt")
+    public InstagramDmPromptResponse getDmPrompt(@RequestBody InstagramDmPromptRequest request) {
+        String version = request == null ? null : request.version();
+        String resolved = resolveDmPromptVersion(version);
+        return new InstagramDmPromptResponse(resolved, instagramDmPromptService.loadTemplateRaw(resolved));
+    }
+
+    private String resolveDmPromptVersion(String version) {
+        if (version != null && !version.isBlank()) {
+            return version.trim();
+        }
+        List<String> versions = instagramDmPromptService.listVersions();
+        if (versions.isEmpty()) {
+            return "v1";
+        }
+        return versions.get(0);
     }
 }

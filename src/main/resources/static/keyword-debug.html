@@ -205,6 +205,16 @@
         margin-bottom: 14px;
       }
 
+      .hidden {
+        display: none;
+      }
+
+      .field-note {
+        margin-top: 6px;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+
       .row {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -404,9 +414,17 @@
               </div>
               <div class="field">
                 <label for="keywordVersion">Prompt Version</label>
-                <div class="row">
-                  <select id="keywordVersion"></select>
-                  <input id="customKeywordVersion" type="text" placeholder="custom version (v3)" />
+                <select id="keywordVersion"></select>
+              </div>
+              <div class="field hidden" id="keywordCustomPromptField">
+                <label for="customKeywordPrompt">Custom Keyword Prompt</label>
+                <textarea
+                  id="customKeywordPrompt"
+                  rows="6"
+                  placeholder="Paste a custom keyword prompt template."
+                ></textarea>
+                <div class="field-note">
+                  Use {{profile_name}}, {{profile_bio}}, {{profile_category}}, {{post_captions}} placeholders.
                 </div>
               </div>
               <label class="check">
@@ -476,16 +494,29 @@
               </div>
               <div class="field">
                 <label for="dmKeywordVersion">Keyword Version</label>
-                <div class="row">
-                  <select id="dmKeywordVersion"></select>
-                  <input id="customDmKeywordVersion" type="text" placeholder="custom keyword version" />
+                <select id="dmKeywordVersion"></select>
+              </div>
+              <div class="field hidden" id="dmKeywordCustomPromptField">
+                <label for="customDmKeywordPrompt">Custom Keyword Prompt</label>
+                <textarea
+                  id="customDmKeywordPrompt"
+                  rows="5"
+                  placeholder="Custom keyword prompt template for DM flow."
+                ></textarea>
+                <div class="field-note">
+                  Use {{profile_name}}, {{profile_bio}}, {{profile_category}}, {{post_captions}} placeholders.
                 </div>
               </div>
               <div class="field">
                 <label for="dmVersion">DM Prompt Version</label>
-                <div class="row">
-                  <select id="dmVersion"></select>
-                  <input id="customDmVersion" type="text" placeholder="custom dm version" />
+                <select id="dmVersion"></select>
+              </div>
+              <div class="field hidden" id="dmCustomPromptField">
+                <label for="customDmPrompt">Custom DM Prompt</label>
+                <textarea id="customDmPrompt" rows="5" placeholder="Custom DM prompt template."></textarea>
+                <div class="field-note">
+                  Use {{MOOD_KEYWORDS}}, {{CONTENT_KEYWORDS}}, {{TONE_KEYWORDS}}, {{IMPRESSION_SUMMARY}}
+                  placeholders.
                 </div>
               </div>
               <label class="check">
@@ -558,7 +589,8 @@
     <script>
       const userIdInput = document.getElementById("userId");
       const keywordVersionSelect = document.getElementById("keywordVersion");
-      const customKeywordVersionInput = document.getElementById("customKeywordVersion");
+      const keywordCustomPromptField = document.getElementById("keywordCustomPromptField");
+      const customKeywordPromptInput = document.getElementById("customKeywordPrompt");
       const keywordIgnoreCache = document.getElementById("keywordIgnoreCache");
       const keywordRequestOutput = document.getElementById("keywordRequestOutput");
       const keywordBtn = document.getElementById("keywordBtn");
@@ -571,9 +603,11 @@
       const keywordRawOutput = document.getElementById("keywordRawOutput");
 
       const dmKeywordVersionSelect = document.getElementById("dmKeywordVersion");
-      const customDmKeywordVersionInput = document.getElementById("customDmKeywordVersion");
+      const dmKeywordCustomPromptField = document.getElementById("dmKeywordCustomPromptField");
+      const customDmKeywordPromptInput = document.getElementById("customDmKeywordPrompt");
       const dmVersionSelect = document.getElementById("dmVersion");
-      const customDmVersionInput = document.getElementById("customDmVersion");
+      const dmCustomPromptField = document.getElementById("dmCustomPromptField");
+      const customDmPromptInput = document.getElementById("customDmPrompt");
       const dmIgnoreCache = document.getElementById("dmIgnoreCache");
       const dmRequestOutput = document.getElementById("dmRequestOutput");
       const dmBtn = document.getElementById("dmBtn");
@@ -588,19 +622,51 @@
       const tabButtons = document.querySelectorAll(".tab-btn");
       const tabPanels = document.querySelectorAll(".tab-panel");
       const copyButtons = document.querySelectorAll("[data-copy]");
+      const DEFAULT_KEYWORD_VERSION = "v2";
+      const DEFAULT_DM_VERSION = "v1";
+      let lastKeywordVersion = DEFAULT_KEYWORD_VERSION;
+      let lastDmKeywordVersion = DEFAULT_KEYWORD_VERSION;
+      let lastDmVersion = DEFAULT_DM_VERSION;
 
-      function buildVersion(selectEl, customInputEl) {
-        const version = selectEl.value;
-        if (version === "custom") {
-          return customInputEl.value.trim();
+      function getCustomPrompt(selectEl, inputEl) {
+        if (selectEl.value !== "custom") {
+          return "";
         }
-        return version;
+        const value = inputEl.value;
+        return value.trim() ? value : "";
+      }
+
+      function resolveVersion(selectEl, lastValue, fallback) {
+        if (selectEl.value && selectEl.value !== "custom") {
+          return selectEl.value;
+        }
+        return lastValue || fallback;
+      }
+
+      function toggleCustomField(selectEl, fieldEl) {
+        if (!fieldEl) {
+          return;
+        }
+        fieldEl.classList.toggle("hidden", selectEl.value !== "custom");
+      }
+
+      function syncLastVersions() {
+        if (keywordVersionSelect.value !== "custom") {
+          lastKeywordVersion = keywordVersionSelect.value;
+        }
+        if (dmKeywordVersionSelect.value !== "custom") {
+          lastDmKeywordVersion = dmKeywordVersionSelect.value;
+        }
+        if (dmVersionSelect.value !== "custom") {
+          lastDmVersion = dmVersionSelect.value;
+        }
       }
 
       function buildKeywordPayload() {
         return {
           userId: userIdInput.value.trim(),
-          version: buildVersion(keywordVersionSelect, customKeywordVersionInput),
+          version: resolveVersion(keywordVersionSelect, lastKeywordVersion, DEFAULT_KEYWORD_VERSION),
+          customPrompt: getCustomPrompt(keywordVersionSelect, customKeywordPromptInput),
           ignoreCache: keywordIgnoreCache.checked,
         };
       }
@@ -608,8 +674,10 @@
       function buildDmPayload() {
         return {
           userId: userIdInput.value.trim(),
-          version: buildVersion(dmKeywordVersionSelect, customDmKeywordVersionInput),
-          dmVersion: buildVersion(dmVersionSelect, customDmVersionInput),
+          version: resolveVersion(dmKeywordVersionSelect, lastDmKeywordVersion, DEFAULT_KEYWORD_VERSION),
+          customKeywordPrompt: getCustomPrompt(dmKeywordVersionSelect, customDmKeywordPromptInput),
+          dmVersion: resolveVersion(dmVersionSelect, lastDmVersion, DEFAULT_DM_VERSION),
+          customDmPrompt: getCustomPrompt(dmVersionSelect, customDmPromptInput),
           ignoreCache: dmIgnoreCache.checked,
         };
       }
@@ -637,9 +705,109 @@
         });
       }
 
+      async function fetchKeywordTemplate(version) {
+        try {
+          const response = await fetch("/instagram/keyword-prompt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: "", version }),
+          });
+          if (!response.ok) {
+            return "";
+          }
+          const data = await response.json();
+          return data.template || "";
+        } catch (err) {
+          return "";
+        }
+      }
+
+      async function fetchDmTemplate(version) {
+        try {
+          const response = await fetch("/instagram/dm-prompt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ version }),
+          });
+          if (!response.ok) {
+            return "";
+          }
+          const data = await response.json();
+          return data.template || "";
+        } catch (err) {
+          return "";
+        }
+      }
+
+      async function fillKeywordCustomPrompt(selectEl, inputEl, version, previewTarget, payloadBuilder) {
+        if (selectEl.value !== "custom") {
+          return;
+        }
+        if (inputEl.value.trim()) {
+          return;
+        }
+        const template = await fetchKeywordTemplate(version);
+        if (!template) {
+          return;
+        }
+        inputEl.value = template;
+        setRequestPreview(previewTarget, payloadBuilder());
+      }
+
+      async function fillDmCustomPrompt(selectEl, inputEl, version, previewTarget, payloadBuilder) {
+        if (selectEl.value !== "custom") {
+          return;
+        }
+        if (inputEl.value.trim()) {
+          return;
+        }
+        const template = await fetchDmTemplate(version);
+        if (!template) {
+          return;
+        }
+        inputEl.value = template;
+        setRequestPreview(previewTarget, payloadBuilder());
+      }
+
       function updateRequestPreviews() {
+        syncLastVersions();
+        toggleCustomField(keywordVersionSelect, keywordCustomPromptField);
+        toggleCustomField(dmKeywordVersionSelect, dmKeywordCustomPromptField);
+        toggleCustomField(dmVersionSelect, dmCustomPromptField);
         setRequestPreview(keywordRequestOutput, buildKeywordPayload());
         setRequestPreview(dmRequestOutput, buildDmPayload());
+        const keywordVersion = resolveVersion(
+          keywordVersionSelect,
+          lastKeywordVersion,
+          DEFAULT_KEYWORD_VERSION,
+        );
+        const dmKeywordVersion = resolveVersion(
+          dmKeywordVersionSelect,
+          lastDmKeywordVersion,
+          DEFAULT_KEYWORD_VERSION,
+        );
+        const dmVersion = resolveVersion(dmVersionSelect, lastDmVersion, DEFAULT_DM_VERSION);
+        void fillKeywordCustomPrompt(
+          keywordVersionSelect,
+          customKeywordPromptInput,
+          keywordVersion,
+          keywordRequestOutput,
+          buildKeywordPayload,
+        );
+        void fillKeywordCustomPrompt(
+          dmKeywordVersionSelect,
+          customDmKeywordPromptInput,
+          dmKeywordVersion,
+          dmRequestOutput,
+          buildDmPayload,
+        );
+        void fillDmCustomPrompt(
+          dmVersionSelect,
+          customDmPromptInput,
+          dmVersion,
+          dmRequestOutput,
+          buildDmPayload,
+        );
       }
 
       async function runPromptPreview() {
@@ -656,7 +824,11 @@
           const response = await fetch("/instagram/keyword-prompt", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: payload.userId, version: payload.version }),
+            body: JSON.stringify({
+              userId: payload.userId,
+              version: payload.version,
+              customPrompt: payload.customPrompt,
+            }),
           });
           if (!response.ok) {
             setStatus(promptStatusEl, "Prompt preview failed: " + response.status, "error");
@@ -882,12 +1054,12 @@
       [
         userIdInput,
         keywordVersionSelect,
-        customKeywordVersionInput,
+        customKeywordPromptInput,
         keywordIgnoreCache,
         dmKeywordVersionSelect,
-        customDmKeywordVersionInput,
+        customDmKeywordPromptInput,
         dmVersionSelect,
-        customDmVersionInput,
+        customDmPromptInput,
         dmIgnoreCache,
       ].forEach((el) => {
         el.addEventListener("input", updateRequestPreviews);

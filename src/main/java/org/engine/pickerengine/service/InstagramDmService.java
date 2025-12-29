@@ -61,15 +61,21 @@ public class InstagramDmService {
     public InstagramDmResponse generateDm(
             String userId,
             String keywordVersion,
+            String customKeywordPrompt,
             String dmVersion,
+            String customDmPrompt,
             boolean ignoreCache) {
         if (userId == null || userId.isBlank() || apiKey.isBlank()) {
             return new InstagramDmResponse("", List.of(), List.of(), List.of(), "");
         }
-        InstagramKeywordResponse keywords = keywordService.extractKeywords(userId, keywordVersion, ignoreCache);
+        InstagramKeywordResponse keywords = keywordService.extractKeywords(
+                userId,
+                keywordVersion,
+                customKeywordPrompt,
+                ignoreCache);
         InstagramProfileWithPosts profileWithPosts = instagramService.fetchProfileWithPosts(userId);
         DmPromptContext context = buildPromptContext(profileWithPosts.profile(), keywords);
-        String prompt = buildPrompt(context, resolvePromptVersion(dmVersion));
+        String prompt = buildPrompt(context, resolvePromptVersion(dmVersion), customDmPrompt);
         String message = callModel(prompt);
         return new InstagramDmResponse(
                 message,
@@ -98,8 +104,11 @@ public class InstagramDmService {
         return new DmPromptContext(mood, content, tone, summary);
     }
 
-    private String buildPrompt(DmPromptContext context, String version) {
-        String template = dmPromptService.loadTemplateRaw(version);
+    private String buildPrompt(DmPromptContext context, String version, String customPrompt) {
+        String template = customPrompt;
+        if (template == null || template.isBlank()) {
+            template = dmPromptService.loadTemplateRaw(version);
+        }
         return template
                 .replace("{{MOOD_KEYWORDS}}", joinKeywords(context.moodKeywords()))
                 .replace("{{CONTENT_KEYWORDS}}", joinKeywords(context.contentKeywords()))

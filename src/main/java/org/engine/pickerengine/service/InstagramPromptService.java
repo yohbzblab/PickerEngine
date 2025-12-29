@@ -30,11 +30,18 @@ public class InstagramPromptService {
     }
 
     public String buildPrompt(InstagramProfileWithPosts data, int postLimit, String version) {
+        return buildPromptFromTemplate(data, postLimit, loadTemplate(version));
+    }
+
+    public String buildPromptFromTemplate(InstagramProfileWithPosts data, int postLimit, String template) {
         InstagramProfile profile = data.profile();
-        String template = loadTemplate(version);
+        String resolvedTemplate = template;
+        if (resolvedTemplate == null || resolvedTemplate.isBlank()) {
+            resolvedTemplate = DEFAULT_TEMPLATE;
+        }
         String captions = buildCaptions(data, postLimit);
 
-        return template
+        return resolvedTemplate
                 .replace("{{profile_name}}", nullToEmpty(profile.fullName()))
                 .replace("{{profile_bio}}", nullToEmpty(profile.biography()))
                 .replace("{{profile_category}}", nullToEmpty(profile.categoryName()))
