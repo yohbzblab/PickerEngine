@@ -1069,15 +1069,6 @@
       const dmVersionsOutput = document.getElementById("dmVersionsOutput");
       const dmRawOutput = document.getElementById("dmRawOutput");
 
-      const searchKeywordQueryInput = document.getElementById("searchKeywordQuery");
-      const searchKeywordBtn = document.getElementById("searchKeywordBtn");
-      const searchKeywordStatusEl = document.getElementById("searchKeywordStatus");
-      const searchKeywordRequestOutput = document.getElementById("searchKeywordRequestOutput");
-      const searchHashtagList = document.getElementById("searchHashtagList");
-      const searchUserList = document.getElementById("searchUserList");
-      const searchPlaceList = document.getElementById("searchPlaceList");
-      const searchKeywordRawOutput = document.getElementById("searchKeywordRawOutput");
-
       const keywordQueryInput = document.getElementById("keywordQuery");
       const keywordUserExpand = document.getElementById("keywordUserExpand");
       const keywordUserOptions = document.getElementById("keywordUserOptions");
@@ -1089,16 +1080,6 @@
       const keywordUserRequestOutput = document.getElementById("keywordUserRequestOutput");
       const keywordUserList = document.getElementById("keywordUserList");
       const keywordUserRawOutput = document.getElementById("keywordUserRawOutput");
-      const keywordPageQueryInput = document.getElementById("keywordPageQuery");
-      const keywordPageNextMaxId = document.getElementById("keywordPageNextMaxId");
-      const keywordPageSearchSessionId = document.getElementById("keywordPageSearchSessionId");
-      const keywordPageRankToken = document.getElementById("keywordPageRankToken");
-      const keywordPageBtn = document.getElementById("keywordPageBtn");
-      const keywordPageStatusEl = document.getElementById("keywordPageStatus");
-      const keywordPageRequestOutput = document.getElementById("keywordPageRequestOutput");
-      const keywordPageList = document.getElementById("keywordPageList");
-      const keywordPageMetaOutput = document.getElementById("keywordPageMetaOutput");
-      const keywordPageRawOutput = document.getElementById("keywordPageRawOutput");
 
       const tabButtons = document.querySelectorAll(".tab-btn");
       const tabPanels = document.querySelectorAll(".tab-panel");
@@ -1319,35 +1300,6 @@
         return line;
       }
 
-      function buildSearchKeywordUrl() {
-        const query = searchKeywordQueryInput.value.trim();
-        if (!query) {
-          return "";
-        }
-        return "/instagram/search/keyword?q=" + encodeURIComponent(query);
-      }
-
-      function buildKeywordPageRequestUrl() {
-        const query = keywordPageQueryInput.value.trim();
-        if (!query) {
-          return "";
-        }
-        const params = new URLSearchParams({ q: query });
-        const nextMaxId = keywordPageNextMaxId.value.trim();
-        const searchSessionId = keywordPageSearchSessionId.value.trim();
-        const rankToken = keywordPageRankToken.value.trim();
-        if (nextMaxId) {
-          params.set("nextMaxId", nextMaxId);
-        }
-        if (searchSessionId) {
-          params.set("searchSessionId", searchSessionId);
-        }
-        if (rankToken) {
-          params.set("rankToken", rankToken);
-        }
-        return "/instagram/search/keyword/users/page?" + params.toString();
-      }
-
       function buildKeywordUserRequestUrl() {
         const query = keywordQueryInput.value.trim();
         if (!query) {
@@ -1430,71 +1382,6 @@
         });
       }
 
-      function renderHashtags(target, hashtags) {
-        target.innerHTML = "";
-        if (!hashtags || hashtags.length === 0) {
-          target.innerHTML = "<div class=\"list-empty\">(empty)</div>";
-          return;
-        }
-        hashtags.forEach((tag) => {
-          const item = document.createElement("div");
-          item.className = "list-item";
-          const primary = document.createElement("div");
-          primary.className = "list-primary";
-          primary.textContent = tag.name ? "#" + tag.name : "(unknown)";
-          const meta = document.createElement("div");
-          meta.className = "list-meta";
-          const parts = [];
-          if (typeof tag.mediaCount === "number") {
-            parts.push("media " + tag.mediaCount);
-          }
-          if (tag.subtitle) {
-            parts.push(tag.subtitle);
-          }
-          if (tag.id) {
-            parts.push("id " + tag.id);
-          }
-          meta.textContent = parts.join(" · ");
-          item.appendChild(primary);
-          if (meta.textContent) {
-            item.appendChild(meta);
-          }
-          target.appendChild(item);
-        });
-      }
-
-      function renderPlaces(target, places) {
-        target.innerHTML = "";
-        if (!places || places.length === 0) {
-          target.innerHTML = "<div class=\"list-empty\">(empty)</div>";
-          return;
-        }
-        places.forEach((place) => {
-          const item = document.createElement("div");
-          item.className = "list-item";
-          const primary = document.createElement("div");
-          primary.className = "list-primary";
-          primary.textContent = place.title || "(unknown)";
-          const meta = document.createElement("div");
-          meta.className = "list-meta";
-          const parts = [];
-          if (place.subtitle) {
-            parts.push(place.subtitle);
-          }
-          if (place.address) {
-            parts.push(place.address);
-          }
-          if (place.locationId) {
-            parts.push("id " + place.locationId);
-          }
-          meta.textContent = parts.join(" · ");
-          item.appendChild(primary);
-          if (meta.textContent) {
-            item.appendChild(meta);
-          }
-          target.appendChild(item);
-        });
-      }
 
       async function fetchKeywordTemplate(version) {
         try {
@@ -1605,9 +1492,7 @@
         setRequestPreview(priceRequestOutput, buildPricePayload());
         updatePricePayloadPreview();
         setRequestPreview(dmRequestOutput, buildDmPayload());
-        setRequestUrlPreview(searchKeywordRequestOutput, buildSearchKeywordUrl());
         setRequestUrlPreview(keywordUserRequestOutput, buildKeywordUserRequestUrl());
-        setRequestUrlPreview(keywordPageRequestOutput, buildKeywordPageRequestUrl());
         const keywordVersion = resolveVersion(
           keywordVersionSelect,
           lastKeywordVersion,
@@ -1940,42 +1825,6 @@
         }
       }
 
-      async function runSearchKeyword() {
-        const url = buildSearchKeywordUrl();
-        if (!url) {
-          setStatus(searchKeywordStatusEl, "Keyword query is required.", "error");
-          return;
-        }
-        setStatus(searchKeywordStatusEl, "Searching keyword...", "info");
-        searchKeywordRawOutput.textContent = "Loading...";
-        searchHashtagList.innerHTML = "";
-        searchUserList.innerHTML = "";
-        searchPlaceList.innerHTML = "";
-
-        try {
-          const response = await fetch(url);
-          const text = await response.text();
-          setRawOutput(searchKeywordRawOutput, text);
-          if (!response.ok) {
-            setStatus(searchKeywordStatusEl, "Request failed: " + response.status, "error");
-            return;
-          }
-          let data = null;
-          try {
-            data = JSON.parse(text);
-          } catch (err) {
-            setStatus(searchKeywordStatusEl, "Failed to parse JSON response.", "error");
-            return;
-          }
-          renderHashtags(searchHashtagList, data.hashtags);
-          renderUsers(searchUserList, data.users);
-          renderPlaces(searchPlaceList, data.places);
-          setStatus(searchKeywordStatusEl, "Keyword search complete.", "success");
-        } catch (err) {
-          setStatus(searchKeywordStatusEl, "Network error: " + err.message, "error");
-        }
-      }
-
       async function runKeywordUserSearch() {
         const url = buildKeywordUserRequestUrl();
         if (!url) {
@@ -2005,56 +1854,6 @@
           setStatus(keywordUserStatusEl, "User search complete.", "success");
         } catch (err) {
           setStatus(keywordUserStatusEl, "Network error: " + err.message, "error");
-        }
-      }
-
-      async function runKeywordPageSearch() {
-        const url = buildKeywordPageRequestUrl();
-        if (!url) {
-          setStatus(keywordPageStatusEl, "Keyword query is required.", "error");
-          return;
-        }
-        setStatus(keywordPageStatusEl, "Fetching page...", "info");
-        keywordPageRawOutput.textContent = "Loading...";
-        keywordPageList.innerHTML = "";
-        keywordPageMetaOutput.value = "";
-
-        try {
-          const response = await fetch(url);
-          const text = await response.text();
-          setRawOutput(keywordPageRawOutput, text);
-          if (!response.ok) {
-            setStatus(keywordPageStatusEl, "Request failed: " + response.status, "error");
-            return;
-          }
-          let data = null;
-          try {
-            data = JSON.parse(text);
-          } catch (err) {
-            setStatus(keywordPageStatusEl, "Failed to parse JSON response.", "error");
-            return;
-          }
-          renderUsers(keywordPageList, data.users);
-          const meta = {
-            nextMaxId: data.nextMaxId || "",
-            searchSessionId: data.searchSessionId || "",
-            rankToken: data.rankToken || "",
-            hasMore: !!data.hasMore,
-          };
-          keywordPageMetaOutput.value = JSON.stringify(meta, null, 2);
-          if (data.nextMaxId) {
-            keywordPageNextMaxId.value = data.nextMaxId;
-          }
-          if (data.searchSessionId) {
-            keywordPageSearchSessionId.value = data.searchSessionId;
-          }
-          if (data.rankToken) {
-            keywordPageRankToken.value = data.rankToken;
-          }
-          setRequestUrlPreview(keywordPageRequestOutput, buildKeywordPageRequestUrl());
-          setStatus(keywordPageStatusEl, "Page fetch complete.", "success");
-        } catch (err) {
-          setStatus(keywordPageStatusEl, "Network error: " + err.message, "error");
         }
       }
 
@@ -2213,22 +2012,6 @@
             text = priceVersionsOutput.value;
           } else if (target === "dm-versions") {
             text = dmVersionsOutput.value;
-          } else if (target === "search-keyword-request") {
-            text = searchKeywordRequestOutput.value;
-          } else if (target === "search-keyword-raw") {
-            text = rawText(searchKeywordRawOutput);
-          } else if (target === "search-hashtags") {
-            text = Array.from(searchHashtagList.querySelectorAll(".list-primary"))
-              .map((item) => item.textContent)
-              .join(", ");
-          } else if (target === "search-users") {
-            text = Array.from(searchUserList.querySelectorAll(".list-primary"))
-              .map((item) => item.textContent)
-              .join(", ");
-          } else if (target === "search-places") {
-            text = Array.from(searchPlaceList.querySelectorAll(".list-primary"))
-              .map((item) => item.textContent)
-              .join(", ");
           } else if (target === "keyword-users") {
             text = Array.from(keywordUserList.querySelectorAll(".list-primary"))
               .map((item) => item.textContent)
@@ -2237,16 +2020,6 @@
             text = rawText(keywordUserRawOutput);
           } else if (target === "keyword-users-request") {
             text = keywordUserRequestOutput.value;
-          } else if (target === "keyword-page-request") {
-            text = keywordPageRequestOutput.value;
-          } else if (target === "keyword-page-raw") {
-            text = rawText(keywordPageRawOutput);
-          } else if (target === "keyword-page-users") {
-            text = Array.from(keywordPageList.querySelectorAll(".list-primary"))
-              .map((item) => item.textContent)
-              .join(", ");
-          } else if (target === "keyword-page-meta") {
-            text = keywordPageMetaOutput.value;
           }
 
           if (!text) {
@@ -2264,9 +2037,7 @@
       priceImageFileInput.addEventListener("change", handlePriceImageFileChange);
       dmBtn.addEventListener("click", runDmGeneration);
       dmPromptBtn.addEventListener("click", runDmPromptPreview);
-      searchKeywordBtn.addEventListener("click", runSearchKeyword);
       keywordUserBtn.addEventListener("click", runKeywordUserSearch);
-      keywordPageBtn.addEventListener("click", runKeywordPageSearch);
       keywordVersionsBtn.addEventListener("click", loadVersions);
       priceVersionsBtn.addEventListener("click", loadVersions);
       dmVersionsBtn.addEventListener("click", loadVersions);
@@ -2286,16 +2057,11 @@
         dmVersionSelect,
         customDmPromptInput,
         dmIgnoreCache,
-        searchKeywordQueryInput,
         keywordQueryInput,
         keywordUserExpand,
         keywordUserMax,
         keywordUserFeedCount,
         keywordUserPages,
-        keywordPageQueryInput,
-        keywordPageNextMaxId,
-        keywordPageSearchSessionId,
-        keywordPageRankToken,
       ].forEach((el) => {
         el.addEventListener("input", updateRequestPreviews);
         el.addEventListener("change", updateRequestPreviews);
