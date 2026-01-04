@@ -142,74 +142,12 @@ public class InstagramService {
         }
     }
 
-    public List<InstagramSearchUser> searchKeywordUsers(String query) {
-        InstagramSearchResponse response = searchKeyword(query);
-        return response == null || response.users() == null ? List.of() : response.users();
-    }
 
     public List<InstagramSearchUser> searchKeywordUsersExpanded(
             String query,
-            int maxUsers,
-            int feedCount,
             int pages) {
-        List<InstagramSearchUser> base = searchKeywordUsers(query);
-        if (query == null || query.isBlank()) {
-            return base;
-        }
-        List<InstagramSearchUser> fbSearchUsers = fetchFbSearchUsers(query, pages);
-        String tagName = normalizeTagName(query);
-        if (tagName.isBlank()) {
-            return mergeSearchUsers(base, fbSearchUsers, maxUsers);
-        }
-        List<InstagramSearchUser> feedUsers = fetchHashtagFeedUsers(tagName, feedCount);
-        List<InstagramSearchUser> merged = mergeSearchUsers(base, fbSearchUsers, maxUsers);
-        return mergeSearchUsers(merged, feedUsers, maxUsers);
-    }
 
-    public InstagramSearchUsersPage searchKeywordUsersPage(
-            String query,
-            String nextMaxId,
-            String searchSessionId,
-            String rankToken) {
-        if (query == null || query.isBlank()) {
-            return emptyUsersPage(query, rankToken);
-        }
-        if (sessionId.isBlank()) {
-            LOGGER.warn("Instagram fbsearch page skipped (missing session id): {}", query);
-            return emptyUsersPage(query, rankToken);
-        }
-        String normalized = query.trim();
-        String encodedQuery = URLEncoder.encode(normalized, StandardCharsets.UTF_8);
-        String referer = "https://www.instagram.com/explore/search/keyword/?q=" + encodedQuery;
-        String resolvedRankToken = (rankToken == null || rankToken.isBlank())
-                ? UUID.randomUUID().toString()
-                : rankToken.trim();
-        URI uri = buildFbSearchUri(encodedQuery, nextMaxId, resolvedRankToken, searchSessionId);
-        JsonNode root = fetchJson(uri, referer);
-        if (root == null) {
-            return new InstagramSearchUsersPage(
-                    normalized,
-                    List.of(),
-                    nextMaxId,
-                    searchSessionId,
-                    resolvedRankToken,
-                    false);
-        }
-        List<InstagramSearchUser> users = parseFbSearchUsers(root);
-        String resolvedSession = searchSessionId;
-        String sessionFromResponse = textValue(root, "search_session_id", "");
-        if (sessionFromResponse != null && !sessionFromResponse.isBlank()) {
-            resolvedSession = sessionFromResponse;
-        }
-        String cursor = readCursor(root);
-        boolean hasMore = hasMore(root) && cursor != null && !cursor.isBlank();
-        return new InstagramSearchUsersPage(
-                normalized,
-                users,
-                cursor,
-                resolvedSession,
-                resolvedRankToken,
-                hasMore);
+        return fetchFbSearchUsers(query, pages);
     }
 
     private InstagramProfile fetchProfile(String userId) {

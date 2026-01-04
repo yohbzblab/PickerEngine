@@ -3,6 +3,9 @@ package org.engine.pickerengine.controller;
 import org.engine.pickerengine.dto.InstagramKeywordPromptResponse;
 import org.engine.pickerengine.dto.InstagramKeywordRequest;
 import org.engine.pickerengine.dto.InstagramKeywordResponse;
+import org.engine.pickerengine.dto.InstagramPricePromptRequest;
+import org.engine.pickerengine.dto.InstagramPricePromptResponse;
+import org.engine.pickerengine.dto.InstagramPriceRequest;
 import org.engine.pickerengine.dto.InstagramProfile;
 import org.engine.pickerengine.dto.InstagramProfileWithPosts;
 import org.engine.pickerengine.dto.InstagramRequest;
@@ -12,6 +15,8 @@ import org.engine.pickerengine.dto.InstagramSearchUsersPage;
 import org.engine.pickerengine.service.InstagramDmPromptService;
 import org.engine.pickerengine.service.InstagramDmService;
 import org.engine.pickerengine.service.InstagramKeywordService;
+import org.engine.pickerengine.service.InstagramPricePromptService;
+import org.engine.pickerengine.service.InstagramPriceService;
 import org.engine.pickerengine.service.InstagramService;
 import org.engine.pickerengine.service.InstagramPromptService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +31,8 @@ import org.engine.pickerengine.dto.InstagramDmPromptResponse;
 import org.engine.pickerengine.dto.InstagramDmRequest;
 import org.engine.pickerengine.dto.InstagramDmResponse;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.util.List;
 
 @RestController
@@ -37,18 +44,24 @@ public class InstagramController {
     private final InstagramPromptService instagramPromptService;
     private final InstagramDmService instagramDmService;
     private final InstagramDmPromptService instagramDmPromptService;
+    private final InstagramPriceService instagramPriceService;
+    private final InstagramPricePromptService instagramPricePromptService;
 
     public InstagramController(
             InstagramService instagramService,
             InstagramKeywordService instagramKeywordService,
             InstagramPromptService instagramPromptService,
             InstagramDmService instagramDmService,
-            InstagramDmPromptService instagramDmPromptService) {
+            InstagramDmPromptService instagramDmPromptService,
+            InstagramPriceService instagramPriceService,
+            InstagramPricePromptService instagramPricePromptService) {
         this.instagramService = instagramService;
         this.instagramKeywordService = instagramKeywordService;
         this.instagramPromptService = instagramPromptService;
         this.instagramDmService = instagramDmService;
         this.instagramDmPromptService = instagramDmPromptService;
+        this.instagramPriceService = instagramPriceService;
+        this.instagramPricePromptService = instagramPricePromptService;
     }
 
     @PostMapping("/profiles")
@@ -66,32 +79,11 @@ public class InstagramController {
         return instagramService.fetchCachedProfileWithPosts(request.userId());
     }
 
-    @GetMapping("/search/keyword")
-    public InstagramSearchResponse searchKeyword(@RequestParam("q") String query) {
-        return instagramService.searchKeyword(query);
-    }
-
-    @GetMapping("/search/keyword/users")
-    public List<InstagramSearchUser> searchKeywordUsers(@RequestParam("q") String query) {
-        return instagramService.searchKeywordUsers(query);
-    }
-
     @GetMapping("/search/keyword/users/expand")
     public List<InstagramSearchUser> searchKeywordUsersExpanded(
             @RequestParam("q") String query,
-            @RequestParam(value = "maxUsers", defaultValue = "60") int maxUsers,
-            @RequestParam(value = "feedCount", defaultValue = "30") int feedCount,
             @RequestParam(value = "pages", defaultValue = "1") int pages) {
-        return instagramService.searchKeywordUsersExpanded(query, maxUsers, feedCount, pages);
-    }
-
-    @GetMapping("/search/keyword/users/page")
-    public InstagramSearchUsersPage searchKeywordUsersPage(
-            @RequestParam("q") String query,
-            @RequestParam(value = "nextMaxId", required = false) String nextMaxId,
-            @RequestParam(value = "searchSessionId", required = false) String searchSessionId,
-            @RequestParam(value = "rankToken", required = false) String rankToken) {
-        return instagramService.searchKeywordUsersPage(query, nextMaxId, searchSessionId, rankToken);
+        return instagramService.searchKeywordUsersExpanded(query, pages);
     }
 
     @PostMapping("/extract-keywords")
@@ -122,9 +114,37 @@ public class InstagramController {
                 request.customPrompt());
     }
 
+    @PostMapping("/extract-prices")
+    public JsonNode extractPrices(@RequestBody InstagramPriceRequest request) {
+        if (request == null) {
+            return instagramPriceService.extractPrices("", "", null, null);
+        }
+        return instagramPriceService.extractPrices(
+                request.text(),
+                request.imageUrl(),
+                request.version(),
+                request.customPrompt());
+    }
+
+    @PostMapping("/price-prompt")
+    public InstagramPricePromptResponse getPricePrompt(@RequestBody InstagramPricePromptRequest request) {
+        if (request == null) {
+            return instagramPriceService.buildPromptPreview("", null, null);
+        }
+        return instagramPriceService.buildPromptPreview(
+                request.text(),
+                request.version(),
+                request.customPrompt());
+    }
+
     @GetMapping("/keyword-versions")
     public List<String> getKeywordVersions() {
         return instagramPromptService.listVersions();
+    }
+
+    @GetMapping("/price-versions")
+    public List<String> getPriceVersions() {
+        return instagramPricePromptService.listVersions();
     }
 
     @GetMapping("/dm-versions")
