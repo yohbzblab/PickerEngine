@@ -101,6 +101,15 @@ public class InstagramService {
                 });
     }
 
+    public String fetchAccountId(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return null;
+        }
+        String normalized = normalizeUsername(userId);
+        JsonNode user = fetchUserNodeForUsername(normalized);
+        return textValue(user, "id");
+    }
+
     public InstagramSearchResponse searchKeyword(String query) {
         if (query == null || query.isBlank()) {
             return emptySearchResponse(query);

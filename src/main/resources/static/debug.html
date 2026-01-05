@@ -525,6 +525,7 @@
         <button class="tab-btn" data-tab="price" type="button">Price Extract</button>
         <button class="tab-btn" data-tab="dm" type="button">DM Message</button>
         <button class="tab-btn" data-tab="search" type="button">Search</button>
+        <button class="tab-btn" data-tab="featuring" type="button">Featuring</button>
       </div>
 
       <section class="tab-panel active" data-panel="profiles">
@@ -533,7 +534,7 @@
             <div class="card">
               <div class="card-header">
                 <h2>Request</h2>
-                <span class="badge">POST /instagram/profiles | /profile-details | /profile-cache</span>
+                <span class="badge">POST /instagram/profiles | /profile-details | /profile-cache | GET /instagram/profile-by-username</span>
               </div>
               <div class="field">
                 <label for="profileEndpoint">Endpoint</label>
@@ -541,8 +542,9 @@
                   <option value="profiles">/instagram/profiles</option>
                   <option value="profile-details">/instagram/profile-details</option>
                   <option value="profile-cache">/instagram/profile-cache</option>
+                  <option value="profile-by-username">/instagram/profile-by-username (GET)</option>
                 </select>
-                <div class="field-note">Uses the shared Instagram Username input.</div>
+                <div class="field-note">Uses the shared Instagram Username input. The GET endpoint uses a query param.</div>
               </div>
               <div class="actions">
                 <button class="btn" id="profileBtn" type="button">Send Request</button>
@@ -561,6 +563,33 @@
                   <button class="copy-btn" data-copy="profile-request" type="button">Copy</button>
                 </div>
                 <textarea id="profileRequestOutput" rows="4" readonly></textarea>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h2>Batch Fetch</h2>
+                <span class="badge">GET /instagram/profile-by-username</span>
+              </div>
+              <div class="field">
+                <label for="batchUsernames">Username List</label>
+                <textarea
+                  id="batchUsernames"
+                  rows="6"
+                  placeholder="one username per line, or comma-separated"
+                ></textarea>
+                <div class="field-note">Requests are spaced by a random 1-10 second delay.</div>
+              </div>
+              <div class="actions">
+                <button class="btn" id="batchProfileBtn" type="button">Start Batch</button>
+                <button class="btn secondary" id="batchProfileStopBtn" type="button">Stop</button>
+              </div>
+              <div class="status" id="batchProfileStatus">Idle.</div>
+              <div class="payload">
+                <div class="payload-header">
+                  <span>Batch Results</span>
+                  <button class="copy-btn" data-copy="batch-profile-raw" type="button">Copy</button>
+                </div>
+                <div class="raw raw-tree" id="batchProfileRawOutput"></div>
               </div>
             </div>
           </div>
@@ -996,6 +1025,119 @@
           </div>
         </div>
       </section>
+
+      <section class="tab-panel" data-panel="featuring">
+        <div class="grid panel-stack">
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <h2>Request</h2>
+                <span class="badge">GET /featuring/influencers</span>
+              </div>
+              <div class="field">
+                <label for="featuringCurl">Prefill From curl</label>
+                <textarea
+                  id="featuringCurl"
+                  rows="4"
+                  placeholder="Paste curl here to auto-fill platform, page, sort, workspace, cookie."
+                ></textarea>
+                <div class="actions">
+                  <button class="btn secondary" id="featuringParseBtn" type="button">Parse curl</button>
+                  <label class="check">
+                    <input id="featuringRemember" type="checkbox" checked />
+                    remember in browser
+                  </label>
+                </div>
+                <div class="field-note">Keeps values in localStorage on this machine only.</div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="featuringPlatform">Platform</label>
+                  <select id="featuringPlatform">
+                    <option value="ig" selected>ig</option>
+                    <option value="yt">yt</option>
+                    <option value="nb">nb</option>
+                    <option value="tt">tt</option>
+                    <option value="tw">tw</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="featuringPage">Page</label>
+                  <input id="featuringPage" type="number" min="1" value="1" />
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="featuringSortField">Order By</label>
+                  <input id="featuringSortField" type="text" value="follower" />
+                </div>
+                <div class="field">
+                  <label for="featuringSortOrder">Order</label>
+                  <select id="featuringSortOrder">
+                    <option value="desc" selected>desc</option>
+                    <option value="asc">asc</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="featuringWorkspace">Ft-Workspace Header</label>
+                <input id="featuringWorkspace" type="text" placeholder="workspace code" />
+                <div class="field-note">Required for Featuring API access.</div>
+              </div>
+              <div class="field">
+                <label for="featuringAuthorization">Authorization (Bearer)</label>
+                <textarea
+                  id="featuringAuthorization"
+                  rows="3"
+                  placeholder="Bearer eyJhbGciOi..."
+                ></textarea>
+                <div class="field-note">Sent as X-Featuring-Authorization.</div>
+              </div>
+              <div class="field">
+                <label for="featuringCookie">Cookie Header (optional)</label>
+                <textarea
+                  id="featuringCookie"
+                  rows="5"
+                  placeholder="Paste the full cookie string from your curl request."
+                ></textarea>
+                <div class="field-note">Sent as X-Featuring-Cookie (browsers cannot set Cookie directly).</div>
+              </div>
+              <div class="actions">
+                <button class="btn" id="featuringBtn" type="button">Fetch Influencers</button>
+              </div>
+              <div class="status" id="featuringStatus">Idle.</div>
+              <div class="payload">
+                <div class="payload-header">
+                  <span>Request URL</span>
+                  <button class="copy-btn" data-copy="featuring-url" type="button">Copy</button>
+                </div>
+                <textarea id="featuringRequestOutput" rows="3" readonly></textarea>
+              </div>
+              <div class="payload">
+                <div class="payload-header">
+                  <span>Request Headers</span>
+                  <button class="copy-btn" data-copy="featuring-headers" type="button">Copy</button>
+                </div>
+                <textarea id="featuringHeadersOutput" rows="6" readonly></textarea>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <h2>Response</h2>
+              </div>
+              <div class="block">
+                <div class="block-header">
+                  <h3>Raw Response</h3>
+                  <button class="copy-btn" data-copy="featuring-raw" type="button">Copy</button>
+                </div>
+                <div class="raw raw-tree" id="featuringRawOutput"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <script>
@@ -1006,6 +1148,11 @@
       const profileRequestOutput = document.getElementById("profileRequestOutput");
       const profileUrlOutput = document.getElementById("profileUrlOutput");
       const profileRawOutput = document.getElementById("profileRawOutput");
+      const batchUsernamesInput = document.getElementById("batchUsernames");
+      const batchProfileBtn = document.getElementById("batchProfileBtn");
+      const batchProfileStopBtn = document.getElementById("batchProfileStopBtn");
+      const batchProfileStatusEl = document.getElementById("batchProfileStatus");
+      const batchProfileRawOutput = document.getElementById("batchProfileRawOutput");
       const keywordVersionSelect = document.getElementById("keywordVersion");
       const keywordCustomPromptField = document.getElementById("keywordCustomPromptField");
       const customKeywordPromptInput = document.getElementById("customKeywordPrompt");
@@ -1081,6 +1228,22 @@
       const keywordUserList = document.getElementById("keywordUserList");
       const keywordUserRawOutput = document.getElementById("keywordUserRawOutput");
 
+      const featuringPlatform = document.getElementById("featuringPlatform");
+      const featuringPage = document.getElementById("featuringPage");
+      const featuringSortField = document.getElementById("featuringSortField");
+      const featuringSortOrder = document.getElementById("featuringSortOrder");
+      const featuringWorkspace = document.getElementById("featuringWorkspace");
+      const featuringCookie = document.getElementById("featuringCookie");
+      const featuringAuthorization = document.getElementById("featuringAuthorization");
+      const featuringCurl = document.getElementById("featuringCurl");
+      const featuringParseBtn = document.getElementById("featuringParseBtn");
+      const featuringRemember = document.getElementById("featuringRemember");
+      const featuringBtn = document.getElementById("featuringBtn");
+      const featuringStatusEl = document.getElementById("featuringStatus");
+      const featuringRequestOutput = document.getElementById("featuringRequestOutput");
+      const featuringHeadersOutput = document.getElementById("featuringHeadersOutput");
+      const featuringRawOutput = document.getElementById("featuringRawOutput");
+
       const tabButtons = document.querySelectorAll(".tab-btn");
       const tabPanels = document.querySelectorAll(".tab-panel");
       const copyButtons = document.querySelectorAll("[data-copy]");
@@ -1093,6 +1256,9 @@
       let lastDmVersion = DEFAULT_DM_VERSION;
       let priceImageDataUrl = "";
       let lastPricePrompt = "";
+      let batchAbortController = null;
+      let batchInFlight = false;
+      let batchResults = [];
 
       function getCustomPrompt(selectEl, inputEl) {
         if (selectEl.value !== "custom") {
@@ -1131,14 +1297,58 @@
         }
       }
 
+      function isProfileGetEndpoint(endpoint) {
+        return endpoint === "profile-by-username";
+      }
+
+      function parseBatchUsernames(value) {
+        const parts = (value || "").split(/[\n,]+/);
+        const seen = new Set();
+        const results = [];
+        parts.forEach((part) => {
+          const trimmed = part.trim();
+          if (!trimmed || seen.has(trimmed)) {
+            return;
+          }
+          seen.add(trimmed);
+          results.push(trimmed);
+        });
+        return results;
+      }
+
+      function randomDelayMs() {
+        return 1000 + Math.floor(Math.random() * 9001);
+      }
+
+      function wait(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
+      function setBatchControls(running) {
+        batchProfileBtn.disabled = running;
+        batchProfileStopBtn.disabled = !running;
+      }
+
       function buildProfilePayload() {
+        const endpoint = profileEndpointSelect.value || "profiles";
+        const username = userIdInput.value.trim();
+        if (isProfileGetEndpoint(endpoint)) {
+          return {
+            username,
+          };
+        }
         return {
-          userId: userIdInput.value.trim(),
+          userId: username,
         };
       }
 
       function buildProfileUrl() {
         const endpoint = profileEndpointSelect.value || "profiles";
+        if (isProfileGetEndpoint(endpoint)) {
+          const username = userIdInput.value.trim();
+          const params = new URLSearchParams({ username });
+          return "/instagram/" + endpoint + "?" + params.toString();
+        }
         return "/instagram/" + endpoint;
       }
 
@@ -1323,6 +1533,187 @@
         return "/instagram/search/keyword/users/expand?" + params.toString();
       }
 
+      function buildFeaturingRequestUrl() {
+        const platform = (featuringPlatform.value || "ig").trim() || "ig";
+        const rawPage = parseInt(featuringPage.value, 10);
+        const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+        const sortField = featuringSortField.value.trim() || "follower";
+        const sortOrder = (featuringSortOrder.value || "desc").trim() || "desc";
+        const params = new URLSearchParams({
+          page: String(page),
+          order: sortOrder,
+          order_by: sortField,
+        });
+        return "/featuring/influencers?platform=" + encodeURIComponent(platform) + "&" + params.toString();
+      }
+
+      function buildFeaturingHeaders() {
+        const headers = {};
+        const workspace = featuringWorkspace.value.trim();
+        if (workspace) {
+          headers["Ft-Workspace"] = workspace;
+        }
+        const authorization = featuringAuthorization.value.trim();
+        if (authorization) {
+          headers["X-Featuring-Authorization"] = authorization;
+        }
+        const cookie = featuringCookie.value.trim();
+        if (cookie) {
+          headers["X-Featuring-Cookie"] = cookie;
+        }
+        return headers;
+      }
+
+      function parseCurlInput(text) {
+        const result = {
+          url: "",
+          query: {},
+          cookie: "",
+          workspace: "",
+          workspaceFromCookie: "",
+          authorization: "",
+        };
+        if (!text || !text.trim()) {
+          return result;
+        }
+        const urlMatch = text.match(/curl\s+(?:-X\s+\w+\s+)?(?:'([^']+)'|"([^"]+)"|(\S+))/i);
+        if (urlMatch) {
+          result.url = urlMatch[1] || urlMatch[2] || urlMatch[3] || "";
+          try {
+            const parsedUrl = new URL(result.url);
+            const params = parsedUrl.searchParams;
+            result.query.platform = params.get("platform") || "";
+            result.query.page = params.get("page") || "";
+            result.query.sortField = params.get("order_by") || params.get("sortField") || "";
+            result.query.sortOrder = params.get("order") || params.get("sortOrder") || "";
+            if (!result.query.platform) {
+              const pathMatch = parsedUrl.pathname.match(/\/discover\/explore\/([^/]+)\/influencers\/?/i);
+              if (pathMatch) {
+                result.query.platform = pathMatch[1];
+              }
+            }
+          } catch (err) {
+            result.url = result.url.trim();
+          }
+        }
+
+        const headerRegex = /-H\s+(['"])([\s\S]*?)\1/g;
+        let headerMatch;
+        while ((headerMatch = headerRegex.exec(text)) !== null) {
+          const headerValue = headerMatch[2] || "";
+          const separatorIndex = headerValue.indexOf(":");
+          if (separatorIndex === -1) {
+            continue;
+          }
+          const name = headerValue.slice(0, separatorIndex).trim().toLowerCase();
+          const value = headerValue.slice(separatorIndex + 1).trim();
+          if (name === "cookie" && value) {
+            result.cookie = value;
+          }
+          if (name === "ft-workspace" && value) {
+            result.workspace = value;
+          }
+          if (name === "authorization" && value) {
+            result.authorization = value;
+          }
+        }
+
+        if (!result.cookie) {
+          const cookieMatch = text.match(/(?:-b|--cookie)\s+(['"])([\s\S]*?)\1/);
+          if (cookieMatch) {
+            result.cookie = cookieMatch[2] || "";
+          }
+        }
+
+        if (result.cookie) {
+          const workspaceMatch = result.cookie.match(/(?:^|;\s*)workspace_code=([^;]+)/i);
+          if (workspaceMatch) {
+            result.workspaceFromCookie = workspaceMatch[1];
+          }
+        }
+
+        return result;
+      }
+
+      function applyFeaturingPrefill(parsed) {
+        if (!parsed) {
+          return;
+        }
+        if (parsed.query.platform) {
+          featuringPlatform.value = parsed.query.platform;
+        }
+        if (parsed.query.page) {
+          featuringPage.value = parsed.query.page;
+        }
+        if (parsed.query.sortField) {
+          featuringSortField.value = parsed.query.sortField;
+        }
+        if (parsed.query.sortOrder) {
+          featuringSortOrder.value = parsed.query.sortOrder;
+        }
+        if (parsed.workspace) {
+          featuringWorkspace.value = parsed.workspace;
+        } else if (!featuringWorkspace.value && parsed.workspaceFromCookie) {
+          featuringWorkspace.value = parsed.workspaceFromCookie;
+        }
+        if (parsed.authorization) {
+          featuringAuthorization.value = parsed.authorization;
+        }
+        if (parsed.cookie) {
+          featuringCookie.value = parsed.cookie;
+        }
+      }
+
+      function saveFeaturingDefaults() {
+        if (!featuringRemember.checked) {
+          localStorage.removeItem("featuringDebugDefaults");
+          return;
+        }
+        const payload = {
+          platform: featuringPlatform.value,
+          page: featuringPage.value,
+          sortField: featuringSortField.value,
+          sortOrder: featuringSortOrder.value,
+          workspace: featuringWorkspace.value,
+          authorization: featuringAuthorization.value,
+          cookie: featuringCookie.value,
+        };
+        localStorage.setItem("featuringDebugDefaults", JSON.stringify(payload));
+      }
+
+      function loadFeaturingDefaults() {
+        try {
+          const stored = localStorage.getItem("featuringDebugDefaults");
+          if (!stored) {
+            return;
+          }
+          const payload = JSON.parse(stored);
+          if (payload.platform) {
+            featuringPlatform.value = payload.platform;
+          }
+          if (payload.page) {
+            featuringPage.value = payload.page;
+          }
+          if (payload.sortField) {
+            featuringSortField.value = payload.sortField;
+          }
+          if (payload.sortOrder) {
+            featuringSortOrder.value = payload.sortOrder;
+          }
+          if (payload.workspace) {
+            featuringWorkspace.value = payload.workspace;
+          }
+          if (payload.authorization) {
+            featuringAuthorization.value = payload.authorization;
+          }
+          if (payload.cookie) {
+            featuringCookie.value = payload.cookie;
+          }
+        } catch (err) {
+          localStorage.removeItem("featuringDebugDefaults");
+        }
+      }
+
       function setRequestUrlPreview(target, url) {
         target.value = url || "";
       }
@@ -1493,6 +1884,9 @@
         updatePricePayloadPreview();
         setRequestPreview(dmRequestOutput, buildDmPayload());
         setRequestUrlPreview(keywordUserRequestOutput, buildKeywordUserRequestUrl());
+        setRequestUrlPreview(featuringRequestOutput, buildFeaturingRequestUrl());
+        featuringHeadersOutput.value = JSON.stringify(buildFeaturingHeaders(), null, 2);
+        saveFeaturingDefaults();
         const keywordVersion = resolveVersion(
           keywordVersionSelect,
           lastKeywordVersion,
@@ -1571,22 +1965,26 @@
       }
 
       async function runProfileRequest() {
+        const endpoint = profileEndpointSelect.value || "profiles";
         const payload = buildProfilePayload();
-        if (!payload.userId) {
+        const identifier = isProfileGetEndpoint(endpoint) ? payload.username : payload.userId;
+        if (!identifier) {
           setStatus(profileStatusEl, "Username is required for profile requests.", "error");
           return;
         }
-        const endpoint = profileEndpointSelect.value || "profiles";
         const url = buildProfileUrl();
         setStatus(profileStatusEl, "Requesting " + endpoint + "...", "info");
         profileRawOutput.textContent = "Loading...";
 
         try {
-          const response = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
+          const requestInit = isProfileGetEndpoint(endpoint)
+            ? { method: "GET" }
+            : {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              };
+          const response = await fetch(url, requestInit);
           const text = await response.text();
           setRawOutput(profileRawOutput, text);
           if (!response.ok) {
@@ -1597,6 +1995,106 @@
         } catch (err) {
           setStatus(profileStatusEl, "Network error: " + err.message, "error");
         }
+      }
+
+      async function runBatchProfileRequest() {
+        if (batchInFlight) {
+          return;
+        }
+        const usernames = parseBatchUsernames(batchUsernamesInput.value);
+        if (usernames.length === 0) {
+          setStatus(batchProfileStatusEl, "Username list is required.", "error");
+          return;
+        }
+        batchInFlight = true;
+        batchAbortController = new AbortController();
+        batchResults = [];
+        setBatchControls(true);
+        setStatus(batchProfileStatusEl, "Starting batch (" + usernames.length + " users)...", "info");
+        batchProfileRawOutput.textContent = "Loading...";
+
+        for (let index = 0; index < usernames.length; index += 1) {
+          if (!batchInFlight) {
+            break;
+          }
+          const username = usernames[index];
+          const url = "/instagram/profile-by-username?username=" + encodeURIComponent(username);
+          setStatus(
+            batchProfileStatusEl,
+            "Fetching " + username + " (" + (index + 1) + "/" + usernames.length + ")...",
+            "info",
+          );
+          const entry = {
+            username,
+            url,
+            startedAt: new Date().toISOString(),
+          };
+
+          try {
+            const response = await fetch(url, {
+              method: "GET",
+              signal: batchAbortController.signal,
+            });
+            const text = await response.text();
+            entry.status = response.status;
+            entry.ok = response.ok;
+            entry.finishedAt = new Date().toISOString();
+            try {
+              entry.data = JSON.parse(text);
+            } catch (err) {
+              entry.raw = text;
+            }
+          } catch (err) {
+            if (err.name === "AbortError") {
+              entry.error = "aborted";
+            } else {
+              entry.error = err.message;
+            }
+          }
+          batchResults.push(entry);
+          setRawOutput(
+            batchProfileRawOutput,
+            JSON.stringify(
+              {
+                total: usernames.length,
+                completed: batchResults.length,
+                results: batchResults,
+              },
+              null,
+              2,
+            ),
+          );
+
+          if (index < usernames.length - 1 && batchInFlight) {
+            const delayMs = randomDelayMs();
+            setStatus(
+              batchProfileStatusEl,
+              "Waiting " + Math.round(delayMs / 1000) + "s before next request...",
+              "info",
+            );
+            await wait(delayMs);
+          }
+        }
+
+        if (!batchInFlight) {
+          setStatus(batchProfileStatusEl, "Batch stopped.", "error");
+        } else {
+          setStatus(batchProfileStatusEl, "Batch complete.", "success");
+        }
+        batchInFlight = false;
+        batchAbortController = null;
+        setBatchControls(false);
+      }
+
+      function stopBatchProfileRequest() {
+        if (!batchInFlight) {
+          return;
+        }
+        batchInFlight = false;
+        if (batchAbortController) {
+          batchAbortController.abort();
+        }
+        setBatchControls(false);
       }
 
       async function runDmPromptPreview() {
@@ -1861,6 +2359,48 @@
         }
       }
 
+      async function runFeaturingRequest() {
+        const url = buildFeaturingRequestUrl();
+        const headers = buildFeaturingHeaders();
+        if (!headers["Ft-Workspace"]) {
+          setStatus(featuringStatusEl, "Ft-Workspace header is required.", "error");
+          return;
+        }
+        if (!headers["X-Featuring-Authorization"]) {
+          setStatus(featuringStatusEl, "Authorization header is required.", "error");
+          return;
+        }
+        setStatus(featuringStatusEl, "Requesting Featuring influencers...", "info");
+        featuringRawOutput.textContent = "Loading...";
+
+        try {
+          const response = await fetch(url, {
+            method: "GET",
+            headers,
+          });
+          const text = await response.text();
+          setRawOutput(featuringRawOutput, text);
+          if (!response.ok) {
+            setStatus(featuringStatusEl, "Request failed: " + response.status, "error");
+            return;
+          }
+          setStatus(featuringStatusEl, "Featuring request complete.", "success");
+        } catch (err) {
+          setStatus(featuringStatusEl, "Network error: " + err.message, "error");
+        }
+      }
+
+      function runFeaturingCurlPrefill() {
+        const parsed = parseCurlInput(featuringCurl.value || "");
+        if (!parsed.url && !parsed.cookie && !parsed.workspace && !parsed.workspaceFromCookie) {
+          setStatus(featuringStatusEl, "No curl data found to parse.", "error");
+          return;
+        }
+        applyFeaturingPrefill(parsed);
+        updateRequestPreviews();
+        setStatus(featuringStatusEl, "Prefill updated from curl.", "success");
+      }
+
       async function loadVersions() {
         try {
           const response = await fetch("/instagram/keyword-versions");
@@ -1978,6 +2518,8 @@
             text = profileRequestOutput.value;
           } else if (target === "profile-raw") {
             text = rawText(profileRawOutput);
+          } else if (target === "batch-profile-raw") {
+            text = rawText(batchProfileRawOutput);
           } else if (target === "keywords") {
             text = Array.from(keywordChips.querySelectorAll(".chip"))
               .map((chip) => chip.textContent)
@@ -2024,6 +2566,12 @@
             text = rawText(keywordUserRawOutput);
           } else if (target === "keyword-users-request") {
             text = keywordUserRequestOutput.value;
+          } else if (target === "featuring-url") {
+            text = featuringRequestOutput.value;
+          } else if (target === "featuring-headers") {
+            text = featuringHeadersOutput.value;
+          } else if (target === "featuring-raw") {
+            text = rawText(featuringRawOutput);
           }
 
           if (!text) {
@@ -2034,6 +2582,8 @@
       });
 
       profileBtn.addEventListener("click", runProfileRequest);
+      batchProfileBtn.addEventListener("click", runBatchProfileRequest);
+      batchProfileStopBtn.addEventListener("click", stopBatchProfileRequest);
       keywordBtn.addEventListener("click", runKeywordExtraction);
       promptBtn.addEventListener("click", runPromptPreview);
       priceBtn.addEventListener("click", runPriceExtraction);
@@ -2042,6 +2592,8 @@
       dmBtn.addEventListener("click", runDmGeneration);
       dmPromptBtn.addEventListener("click", runDmPromptPreview);
       keywordUserBtn.addEventListener("click", runKeywordUserSearch);
+      featuringBtn.addEventListener("click", runFeaturingRequest);
+      featuringParseBtn.addEventListener("click", runFeaturingCurlPrefill);
       keywordVersionsBtn.addEventListener("click", loadVersions);
       priceVersionsBtn.addEventListener("click", loadVersions);
       dmVersionsBtn.addEventListener("click", loadVersions);
@@ -2066,11 +2618,23 @@
         keywordUserMax,
         keywordUserFeedCount,
         keywordUserPages,
+        batchUsernamesInput,
+        featuringPlatform,
+        featuringPage,
+        featuringSortField,
+        featuringSortOrder,
+        featuringWorkspace,
+        featuringAuthorization,
+        featuringCookie,
+        featuringCurl,
+        featuringRemember,
       ].forEach((el) => {
         el.addEventListener("input", updateRequestPreviews);
         el.addEventListener("change", updateRequestPreviews);
       });
 
+      setBatchControls(false);
+      loadFeaturingDefaults();
       loadVersions();
     </script>
   </body>

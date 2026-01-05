@@ -7,6 +7,7 @@ import org.engine.pickerengine.dto.InstagramPricePromptRequest;
 import org.engine.pickerengine.dto.InstagramPricePromptResponse;
 import org.engine.pickerengine.dto.InstagramPriceRequest;
 import org.engine.pickerengine.dto.InstagramProfile;
+import org.engine.pickerengine.dto.InstagramProfileInsights;
 import org.engine.pickerengine.dto.InstagramProfileWithPosts;
 import org.engine.pickerengine.dto.InstagramRequest;
 import org.engine.pickerengine.dto.InstagramSearchResponse;
@@ -15,6 +16,7 @@ import org.engine.pickerengine.dto.InstagramSearchUsersPage;
 import org.engine.pickerengine.service.InstagramDmPromptService;
 import org.engine.pickerengine.service.InstagramDmService;
 import org.engine.pickerengine.service.InstagramKeywordService;
+import org.engine.pickerengine.service.InstagramProfileInsightsService;
 import org.engine.pickerengine.service.InstagramPricePromptService;
 import org.engine.pickerengine.service.InstagramPriceService;
 import org.engine.pickerengine.service.InstagramService;
@@ -44,6 +46,7 @@ public class InstagramController {
     private final InstagramDmPromptService instagramDmPromptService;
     private final InstagramPriceService instagramPriceService;
     private final InstagramPricePromptService instagramPricePromptService;
+    private final InstagramProfileInsightsService instagramProfileInsightsService;
 
     public InstagramController(
             InstagramService instagramService,
@@ -52,7 +55,8 @@ public class InstagramController {
             InstagramDmService instagramDmService,
             InstagramDmPromptService instagramDmPromptService,
             InstagramPriceService instagramPriceService,
-            InstagramPricePromptService instagramPricePromptService) {
+            InstagramPricePromptService instagramPricePromptService,
+            InstagramProfileInsightsService instagramProfileInsightsService) {
         this.instagramService = instagramService;
         this.instagramKeywordService = instagramKeywordService;
         this.instagramPromptService = instagramPromptService;
@@ -60,6 +64,7 @@ public class InstagramController {
         this.instagramDmPromptService = instagramDmPromptService;
         this.instagramPriceService = instagramPriceService;
         this.instagramPricePromptService = instagramPricePromptService;
+        this.instagramProfileInsightsService = instagramProfileInsightsService;
     }
 
     @PostMapping("/profiles")
@@ -70,6 +75,11 @@ public class InstagramController {
     @PostMapping("/profile-details")
     public InstagramProfileWithPosts getProfileDetails(@RequestBody InstagramRequest request) {
         return instagramService.fetchProfileWithPosts(request.userId());
+    }
+
+    @GetMapping("/profile-by-username")
+    public InstagramProfileInsights getProfileByUsername(@RequestParam("username") String username) {
+        return instagramProfileInsightsService.fetchInsights(username);
     }
 
     @PostMapping("/profile-cache")
